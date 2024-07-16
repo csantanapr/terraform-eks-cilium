@@ -42,7 +42,7 @@ operator:
 routingMode: native
 ```
 
-Set the Cluster Name explicity
+Set the Cluster Name explicitly
 ```bash
 export CLUSTER_NAME=cilium-demo
 ```
