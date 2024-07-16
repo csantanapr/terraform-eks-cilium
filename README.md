@@ -83,7 +83,10 @@ Note: Using the full ARN as the cluster name doesn't work. Use the name without 
 ```bash
 cilium install \
   --set cluster.name=${CLUSTER_NAME} \
-  --set eni.awsEnablePrefixDelegation=true
+  --set eni.awsEnablePrefixDelegation=true \
+  --set hubble.enabled=true \
+  --set hubble.ui.enabled=true \
+  --set hubble.relay.enabled=true
 ```
 
 ### 5. Deploy Nodes
