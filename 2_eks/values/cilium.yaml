@@ -1,0 +1,18 @@
+
+cluster:
+  name: cilium-demo
+egressMasqueradeInterfaces: eth0
+ipam:
+  mode: eni
+operator:
+  replicas: 1
+routingMode: native
+eni:
+  enabled: true
+  awsEnablePrefixDelegation: true
+hubble:
+  enabled: true
+  ui:
+    enabled: true
+  relay:
+    enabled: true
