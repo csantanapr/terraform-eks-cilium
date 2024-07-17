@@ -192,6 +192,6 @@ cd 1_vpc && terraform destroy
 
 - [Cilium Documentation](https://docs.cilium.io/)
 - [Amazon EKS Documentation](https://docs.aws.amazon.com/eks/)
-- [Terraform Documentation](https://www.terraform.io/docs/)
+- [Amazon EKS Blueprints for Terraform](https://aws-ia.github.io/terraform-aws-eks-blueprints/)
 
 For more information or support, please open an issue in this repository.
