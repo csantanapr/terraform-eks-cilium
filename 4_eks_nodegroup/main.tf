@@ -1,11 +1,12 @@
 locals {
   name            = "cilium-demo"
   cluster_version = "1.30"
+  ami_type = "AL2_x86_64"
 }
 
 module "eks_nodegroup" {
   source  = "terraform-aws-modules/eks/aws//modules/eks-managed-node-group"
-  version = "~> 20.17"
+  version = "~> 20.18"
 
   name = local.name
 
@@ -17,17 +18,17 @@ module "eks_nodegroup" {
   cluster_service_cidr = "172.20.0.0/16"
 
   ami_id                     = local.latest_ami_release_version
-  ami_type                   = "AL2_x86_64"
+  ami_type                   = local.ami_type
   instance_types             = ["m6i.large"]
   min_size                   = 2
   max_size                   = 3
   desired_size               = 2
   enable_bootstrap_user_data = true
 
-  # Using --show-max-allowed would print the maximum allowed by ENI IPs, remove flag to cap the Max to 110 or 250 (30 or more CPUs)
+  # Using --show-max-allowed would print the maximum allowed by ENI IPs, not having this flag caps the Max to 110 or 250 (30 or more CPUs)
   post_bootstrap_user_data = <<-EOT
     KUBELET_CONFIG=/etc/kubernetes/kubelet/kubelet-config.json
-    MAX_PODS=$(/etc/eks/max-pods-calculator.sh --instance-type-from-imds --cni-version 1.10.0 --show-max-allowed --cni-prefix-delegation-enabled)
+    MAX_PODS=$(/etc/eks/max-pods-calculator.sh --instance-type-from-imds --cni-version 1.10.0 --cni-prefix-delegation-enabled)
     echo "$(jq ".maxPods=$MAX_PODS" $KUBELET_CONFIG)" > $KUBELET_CONFIG
     systemctl restart kubelet
   EOT
@@ -66,7 +67,7 @@ locals {
 }
 
 data "aws_ssm_parameter" "ami" {
-  name = local.ssm_ami_type_to_ssm_param["AL2_x86_64"]
+  name = local.ssm_ami_type_to_ssm_param[local.ami_type]
 }
 
 
@@ -100,6 +101,7 @@ data "aws_subnets" "private_subnets" {
 }
 
 data "aws_iam_policy_document" "aws_cilium_policy" {
+  # Adding extra permission according to docs https://docs.cilium.io/en/latest/network/concepts/ipam/eni/#required-privileges
   statement {
     effect    = "Allow"
     resources = ["*"]

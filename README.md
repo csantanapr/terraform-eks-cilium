@@ -1,6 +1,6 @@
 # Cilium and Prefix Delegation on Amazon EKS
 
-This guide demonstrates how to install Cilium with Prefix Delegation on Amazon EKS using bare clusters. The process is divided into several steps, each managed by Terraform.
+This guide demonstrates how to install Cilium with Prefix Delegation on Amazon EKS using bare clusters (bootstrap_self_managed_addons=false). The process is divided into several steps.
 
 ## Prerequisites
 
@@ -40,6 +40,7 @@ cd 3_eks_addons
 terraform init
 terraform apply
 ```
+Expect terraform to timeout as CoreDNS would be in **Degraded** status, as there are no nodes to run the pods. You can move to the next to deploy cilium after a 1 minute into the install of coredns addon.
 
 ### 4. Deploy Cilium
 
@@ -70,23 +71,15 @@ operator:
 routingMode: native
 ```
 
-#### Set Cluster Name
-
+Inspect values.yaml
 ```bash
-export CLUSTER_NAME=cilium-demo
+cat values.yaml
 ```
-
-Note: Using the full ARN as the cluster name doesn't work. Use the name without `:` characters.
 
 #### Install Cilium
 
 ```bash
-cilium install \
-  --set cluster.name=${CLUSTER_NAME} \
-  --set eni.awsEnablePrefixDelegation=true \
-  --set hubble.enabled=true \
-  --set hubble.ui.enabled=true \
-  --set hubble.relay.enabled=true
+cilium install --version 1.15.7 -f values.yaml
 ```
 
 ### 5. Deploy Nodes
@@ -99,7 +92,39 @@ terraform init
 terraform apply
 ```
 
-### 6. Verify Node Configuration
+### 6. Verify Cilium
+
+Check status
+```bash
+cilium status
+```
+Expected output:
+```
+    /¯¯\
+ /¯¯\__/¯¯\    Cilium:             OK
+ \__/¯¯\__/    Operator:           OK
+ /¯¯\__/¯¯\    Envoy DaemonSet:    disabled (using embedded mode)
+ \__/¯¯\__/    Hubble Relay:       OK
+    \__/       ClusterMesh:        disabled
+
+Deployment             hubble-ui          Desired: 1, Ready: 1/1, Available: 1/1
+Deployment             hubble-relay       Desired: 1, Ready: 1/1, Available: 1/1
+DaemonSet              cilium             Desired: 2, Ready: 2/2, Available: 2/2
+Deployment             cilium-operator    Desired: 1, Ready: 1/1, Available: 1/1
+Containers:            cilium-operator    Running: 1
+                       cilium             Running: 2
+                       hubble-ui          Running: 1
+                       hubble-relay       Running: 1
+Cluster Pods:          8/8 managed by Cilium
+Helm chart version:
+Image versions         cilium             quay.io/cilium/cilium:v1.15.7@sha256:2e432bf6879feb8b891c497d6fd784b13e53456017d2b8e4ea734145f0282ef0: 2
+                       hubble-ui          quay.io/cilium/hubble-ui:v0.13.1@sha256:e2e9313eb7caf64b0061d9da0efbdad59c6c461f6ca1752768942bfeda0796c6: 1
+                       hubble-ui          quay.io/cilium/hubble-ui-backend:v0.13.1@sha256:0e0eed917653441fded4e7cdb096b7be6a3bddded5a2dd10812a27b1fc6ed95b: 1
+                       hubble-relay       quay.io/cilium/hubble-relay:v1.15.7@sha256:12870e87ec6c105ca86885c4ee7c184ece6b706cc0f22f63d2a62a9a818fd68f: 1
+                       cilium-operator    quay.io/cilium/operator-aws:v1.15.7@sha256:bb4085da666a5c7a7c6f8135f0de10f0b6895dbf561e9fccda0e272b51bb936e: 1
+```
+
+### 7. Verify Node Configuration
 
 Check that nodes can allocate more than 29 pods:
 
@@ -118,11 +143,11 @@ Allocatable:
   ephemeral-storage:  18242267924
   hugepages-1Gi:      0
   hugepages-2Mi:      0
-  memory:             7291820Ki
-  pods:               434
+  memory:             7291828Ki
+  pods:               110
 ```
 
-### 7. Deploy Sample Application
+### 8. Deploy Sample Application
 
 Deploy 100 nginx pods to test Prefix Delegation:
 
@@ -156,6 +181,7 @@ If you encounter issues:
 To remove all created resources, run `terraform destroy` in each directory in reverse order:
 
 ```bash
+kubectl delete deployment nginx
 cd 4_eks_nodegroup && terraform destroy
 cd 3_eks_addons && terraform destroy
 cd 2_eks && terraform destroy
