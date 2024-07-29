@@ -3,6 +3,11 @@ locals {
   cluster_version = "1.30"
 }
 
+variable remove_kube_proxy {
+  description = "Remove kube-proxy addon"
+  type        = bool
+  default     = true
+}
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
@@ -20,16 +25,23 @@ module "eks" {
   vpc_id     = data.aws_vpc.vpc.id
   subnet_ids = data.aws_subnets.private_subnets.ids
 
-  cluster_addons = {
-    kube-proxy = {}
-  }
-
   tags = local.tags
 }
 
-# Do cilium and kube-proxy after eks
+# Do kube-proxy after eks
+# Do cilium after kube-proxy
 # Race coredns and nodes
 
+resource "aws_eks_addon" "kube-proxy" {
+  count = var.remove_kube_proxy ? 0 : 1
+
+  cluster_name = local.name
+  addon_name   = "kube-proxy"
+
+  tags = local.tags
+
+  depends_on = [module.eks]
+}
 
 resource "helm_release" "cilium" {
   name             = "cilium"
@@ -38,9 +50,9 @@ resource "helm_release" "cilium" {
   chart            = "cilium"
   version          = "1.15.7"
   repository       = "https://helm.cilium.io/"
-  values           = [file("${path.module}/values/cilium.yaml")]
+  values           = [file("${path.module}/values_cilium.yaml")]
 
-  depends_on = [module.eks]
+  depends_on = [aws_eks_addon.kube-proxy]
 }
 
 resource "aws_eks_addon" "coredns" {

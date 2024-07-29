@@ -11,7 +11,7 @@ This guide demonstrates how to install Cilium with Prefix Delegation on Amazon E
 
 ## Step-by-Step Guide
 
-### 1. Deploy VPC
+### Deploy VPC
 
 Create the necessary VPC infrastructure:
 
@@ -21,78 +21,21 @@ terraform init
 terraform apply
 ```
 
-### 2. Deploy EKS Cluster
+### Deploy EKS Cluster
 
 Set up the Amazon EKS cluster:
 
 ```bash
 cd 2_eks
 terraform init
+terraform apply -var="remove_kube_proxy=false"
 terraform apply
 ```
 
-### 3. Deploy EKS Addons
+Kube proxy is required when cilium controller starts, but then when cilium is running can be removed.
 
-Install core DNS and kube-proxy:
 
-```bash
-cd 3_eks_addons
-terraform init
-terraform apply
-```
-Expect terraform to timeout as CoreDNS would be in **Degraded** status, as there are no nodes to run the pods. You can move to the next to deploy cilium after a 1 minute into the install of coredns addon.
-
-### 4. Deploy Cilium
-
-#### Install Cilium CLI
-
-Download and install the Cilium CLI from the [official GitHub repository](https://github.com/cilium/cilium-cli).
-
-#### Inspect Helm Values
-
-View the non-default Helm values without performing the installation:
-
-```bash
-cilium install --dry-run-helm-values
-```
-
-Expected output:
-
-```yaml
-cluster:
-  name: arn:aws:eks:us-west-2:015299085168:cluster/cilium-demo
-egressMasqueradeInterfaces: eth0
-eni:
-  enabled: true
-ipam:
-  mode: eni
-operator:
-  replicas: 1
-routingMode: native
-```
-
-Inspect values.yaml
-```bash
-cat values.yaml
-```
-
-#### Install Cilium
-
-```bash
-cilium install --version 1.15.7 -f values.yaml
-```
-
-### 5. Deploy Nodes
-
-Create the EKS node group:
-
-```bash
-cd 4_eks_nodegroup
-terraform init
-terraform apply
-```
-
-### 6. Verify Cilium
+### Verify Cilium
 
 Check status
 ```bash
@@ -124,7 +67,7 @@ Image versions         cilium             quay.io/cilium/cilium:v1.15.7@sha256:2
                        cilium-operator    quay.io/cilium/operator-aws:v1.15.7@sha256:bb4085da666a5c7a7c6f8135f0de10f0b6895dbf561e9fccda0e272b51bb936e: 1
 ```
 
-### 7. Verify Node Configuration
+### Verify Node Configuration
 
 Check that nodes can allocate more than 29 pods:
 
@@ -147,7 +90,7 @@ Allocatable:
   pods:               110
 ```
 
-### 8. Deploy Sample Application
+### Deploy Sample Application
 
 Deploy 100 nginx pods to test Prefix Delegation:
 
@@ -182,8 +125,6 @@ To remove all created resources, run `terraform destroy` in each directory in re
 
 ```bash
 kubectl delete deployment nginx
-cd 4_eks_nodegroup && terraform destroy
-cd 3_eks_addons && terraform destroy
 cd 2_eks && terraform destroy
 cd 1_vpc && terraform destroy
 ```

@@ -1,0 +1,57 @@
+
+cluster:
+  name: cilium-demo
+kubeProxyReplacement: true
+egressMasqueradeInterfaces: eth0
+ipam:
+  mode: eni
+operator:
+  replicas: 1
+routingMode: native
+eni:
+  enabled: true
+  awsEnablePrefixDelegation: true
+hubble:
+  enabled: true
+  ui:
+    enabled: true
+    service:
+      type: NodePort
+  relay:
+    enabled: true
+    service:
+      type: NodePort
+  metrics:
+    enabled:
+    - dns
+    - drop
+    - tcp
+    - flow
+    - icmp
+    - http
+ingressController:
+  service:
+   annotations:
+     service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+  # -- Enable cilium ingress controller
+  # This will automatically set enable-envoy-config as well.
+  enabled: false
+
+  # -- Set cilium ingress controller to be the default ingress controller
+  # This will let cilium ingress controller route entries without ingress class set
+  default: false
+
+  # -- Default ingress load balancer mode
+  # Supported values: shared, dedicated
+  # For granular control, use the following annotations on the ingress resource
+  # ingress.cilium.io/loadbalancer-mode: shared|dedicated,
+  loadbalancerMode: shared
+
+# -- Configure N-S k8s service loadbalancing
+nodePort:
+  # -- Enable the Cilium NodePort service implementation.
+  enabled: false
+# -- Enable installation of PodCIDR routes between worker
+# nodes if worker nodes share a common L2 network segment.
+autoDirectNodeRoutes: true
+
