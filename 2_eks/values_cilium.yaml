@@ -35,11 +35,11 @@ ingressController:
      service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
   # -- Enable cilium ingress controller
   # This will automatically set enable-envoy-config as well.
-  enabled: false
+  enabled: true
 
   # -- Set cilium ingress controller to be the default ingress controller
   # This will let cilium ingress controller route entries without ingress class set
-  default: false
+  default: true
 
   # -- Default ingress load balancer mode
   # Supported values: shared, dedicated
